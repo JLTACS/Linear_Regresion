@@ -1,4 +1,6 @@
-import numpy as np 
+import numpy as np
+from sklearn import linear_model
+from sklearn.metrics import mean_squared_error
 import pandas as pd 
 import readData 
 import matplotlib.pyplot as plt
@@ -11,38 +13,25 @@ def trainMatrix(train_data):
 
     return a_mt,y_mt
 
-
 def lineal_regresion(a_mt, y_mt):
     a_matrix = a_mt.to_numpy(dtype=np.float32)
     y_matrix = y_mt.to_numpy(dtype=np.float32)
+
+    regresion = linear_model.LinearRegression()
+    regresion.fit(a_matrix,y_matrix)
     
-    a_transpose = np.transpose(a_matrix)
-    at_a = np.matmul(a_transpose,a_matrix)
-    at_y = np.matmul(a_transpose,y_matrix)
+    return regresion
 
-    b_mt = np.linalg.solve(at_a,at_y)
-    return b_mt
-
-def testEvaluation(test_data,b_vector):
+def testEvaluation(test_data,regresion):
     eva_data = test_data.iloc[:,:len(test_data.columns)-1]
     eva_data.insert(0,'unos',1)
     eva_data = eva_data.to_numpy(dtype=np.float32)
 
-    resultado = np.matmul(eva_data,b_vector)
+    resultado = regresion.predict(eva_data)
     resultado = pd.DataFrame(resultado,columns=['Predicciones'])
     resultado['Real'] = test_data['resultado'].values
 
     return resultado
-
-def rmse(predictions):
-    m = len(predictions.index)
-    acu = 0
-    for index, row in predictions.iterrows():
-        acu += ((row['Real']-row['Predicciones'])**2)
-    
-    error = np.sqrt(acu/m)
-    return error
-
 
 def main():
     np.set_printoptions(suppress=True)
@@ -53,20 +42,19 @@ def main():
     print("-----------------------------------------")
     print(y)
     print("-----------------------------------------")
-    b_mt = lineal_regresion(a,y)
-    print(b_mt)
-    result = testEvaluation(test,b_mt)
+    regres = lineal_regresion(a,y)
+    print(regres.coef_)
+    result = testEvaluation(test,regres)
     print(result)
-    error = rmse(result)
+    plot_result = result.to_numpy(dtype=np.float32)
+    error = np.sqrt(mean_squared_error(plot_result[1],plot_result[0]))
     print(error)
 
 
-    plot_result = result.to_numpy(dtype=np.float32)
     plot_result = np.transpose(plot_result)
     plt.scatter(result.index,plot_result[0])
     plt.plot(result.index,plot_result[1])
     plt.show()
-
 
 
 main()
